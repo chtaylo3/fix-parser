@@ -26,6 +26,18 @@
       }
     },
     {
+      "name": "vs2022-x86",
+      "displayName": "MSVC (Visual Studio 17 2022, Win32/x86) — packaging",
+      "inherits": "vcpkg-base",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "Win32",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x86-windows-static",
+        "VCPKG_MANIFEST_FEATURES": "",
+        "FIXPARSER_BUILD_TESTS": "OFF"
+      }
+    },
+    {
       "name": "ninja",
       "displayName": "MSVC (Ninja, x64) — run from a Developer Command Prompt",
       "inherits": "vcpkg-base",
@@ -45,6 +57,11 @@
     {
       "name": "vs2022-release",
       "configurePreset": "vs2022",
+      "configuration": "Release"
+    },
+    {
+      "name": "vs2022-x86-release",
+      "configurePreset": "vs2022-x86",
       "configuration": "Release"
     },
     {

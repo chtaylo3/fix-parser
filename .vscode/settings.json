@@ -1,0 +1,20 @@
+{
+  // This repo ships CMakePresets.json — always drive configure/build from presets
+  // so the extension and the command line stay in lockstep (vs2022 / ninja).
+  "cmake.useCMakePresets": "always",
+
+  // The vcpkg toolchain in CMakePresets.json resolves $env{VCPKG_ROOT}. VS Code
+  // only inherits *persistent* (User/System) env vars — NOT a session-only
+  // `$env:VCPKG_ROOT = "…"` set in a terminal. If this is empty, the toolchain
+  // path collapses to "/scripts/buildsystems/vcpkg.cmake", vcpkg never runs, and
+  // configure produces an empty build tree ("no buildsystem generated").
+  //
+  // Set it persistently once, then restart VS Code:
+  //     setx VCPKG_ROOT "C:\path\to\vcpkg"
+  //
+  // The line below forwards that persistent value into the CMake Tools
+  // configure/build environment so the preset's $env{VCPKG_ROOT} resolves.
+  "cmake.environment": {
+    "VCPKG_ROOT": "${env:VCPKG_ROOT}"
+  }
+}

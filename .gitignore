@@ -31,6 +31,9 @@ CMakeSettings.json
 # Local developer test environment (portable Notepad++ + generated sample logs)
 /tools/
 
+# Packaged release artifacts (built by scripts/package.ps1)
+/dist/
+
 # CMake
 CMakeCache.txt
 CMakeFiles/

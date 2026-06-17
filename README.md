@@ -53,10 +53,23 @@ its own. The Notepad++ integration layers (`src/plugin/`, `src/ui/`) wrap it.
 - [vcpkg](https://github.com/microsoft/vcpkg) — dependencies are declared in
   `vcpkg.json` (manifest mode) and installed automatically at configure time.
 
+> **`VCPKG_ROOT` must be set, and how you set it matters.** The vcpkg toolchain
+> in `CMakePresets.json` resolves `$env{VCPKG_ROOT}`. If that variable is empty
+> at configure time it silently collapses to an invalid toolchain path
+> (`/scripts/buildsystems/vcpkg.cmake`), vcpkg never runs, `find_package` fails,
+> and you get a broken/empty build tree. A session-only `$env:VCPKG_ROOT = "…"`
+> (below) is fine for command-line builds **in that same terminal**, but VS Code
+> and Visual Studio launched from Explorer only inherit *persistent* User/System
+> variables. For the IDE flows, set it persistently once and restart the IDE:
+>
+> ```powershell
+> setx VCPKG_ROOT "C:\path\to\vcpkg"   # persistent; takes effect in new processes
+> ```
+
 ### Build the core library + tests
 
 ```powershell
-$env:VCPKG_ROOT = "C:\path\to\vcpkg"
+$env:VCPKG_ROOT = "C:\path\to\vcpkg"   # this terminal only — see note above
 cmake --preset vs2022
 cmake --build --preset vs2022-debug
 ctest --preset vs2022-debug
@@ -89,10 +102,18 @@ A one-command loop sets up a real portable Notepad++ with the plugin deployed an
 a sample log open, so you can build → F5 → step into plugin code.
 
 **Prerequisites:** the VS Code C/C++ extension (`ms-vscode.cpptools`, provides the
-`cppvsdbg` debugger) and `VCPKG_ROOT` set in your environment. When you open this
-repo in VS Code it will prompt to install the recommended extensions (from
+`cppvsdbg` debugger) and a **persistent** `VCPKG_ROOT` (see the `setx` note under
+[Building](#building) — a terminal-only `$env:VCPKG_ROOT` is *not* seen by VS Code,
+including the CMake Tools extension and the F5 build task). When you open this repo
+in VS Code it will prompt to install the recommended extensions (from
 `.vscode/extensions.json`) — accept it, or install them from the Extensions view's
 "Recommended" section.
+
+> **If configure already failed once with an unset `VCPKG_ROOT`,** the
+> `build/<preset>/` tree holds a poisoned cache with the bad toolchain path baked
+> in; re-configuring won't repair it. Delete the build directory
+> (`Remove-Item -Recurse -Force build\vs2022`) and configure again after setting
+> `VCPKG_ROOT` persistently.
 
 **Use it:** pick **Debug FixParser in Notepad++ (moderate log)** (or the 50 MB
 single-line variant) from the Run and Debug panel and press F5. The
