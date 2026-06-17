@@ -1,0 +1,39 @@
+# Build output
+/build/
+/out/
+[Bb]in/
+[Bb]in64/
+arm64/
+[Oo]bj/
+*.obj
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.lib
+*.exp
+
+# vcpkg
+/vcpkg_installed/
+
+# Downloaded (not vendored) FIX dictionaries — fetched by CMake at configure time
+/resources/dictionaries/*.xml
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+CMakeSettings.json
+
+# Planning docs (local only)
+/docs/plans/
+
+# Local developer test environment (portable Notepad++ + generated sample logs)
+/tools/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json

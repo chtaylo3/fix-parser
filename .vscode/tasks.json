@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "cmake: configure",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--preset", "vs2022"],
+      "options": { "env": { "VCPKG_ROOT": "${env:VCPKG_ROOT}" } },
+      "problemMatcher": []
+    },
+    {
+      "label": "local: build + deploy",
+      "detail": "Build the plugin, fetch portable Notepad++, generate sample logs, and deploy.",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "--preset", "vs2022-debug", "--target", "local_env"],
+      "options": { "env": { "VCPKG_ROOT": "${env:VCPKG_ROOT}" } },
+      "dependsOn": ["cmake: configure"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$msCompile"]
+    }
+  ]
+}

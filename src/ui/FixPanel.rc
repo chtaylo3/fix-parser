@@ -1,0 +1,11 @@
+#include <windows.h>
+#include "resource.h"
+
+// Empty dialog template — child controls (history list + field tree) are created
+// programmatically in WM_INITDIALOG. The panel is hosted by the Notepad++
+// docking manager.
+IDD_FIX_PANEL DIALOGEX 0, 0, 300, 400
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+END

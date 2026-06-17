@@ -1,0 +1,20 @@
+QuickFIX Data Dictionaries
+==========================
+
+The FIX data dictionary XML files in this directory
+(FIX40.xml, FIX41.xml, FIX42.xml, FIX43.xml, FIX44.xml,
+FIX50.xml, FIX50SP1.xml, FIX50SP2.xml, FIXT11.xml) are sourced from the
+QuickFIX project:
+
+    https://github.com/quickfix/quickfix/tree/master/spec
+
+They are redistributed under the QuickFIX Software License, Version 1.0.
+See https://github.com/quickfix/quickfix/blob/master/LICENSE for the full
+license text.
+
+This product is not affiliated with or endorsed by the QuickFIX project.
+"FIX" and "FIX Protocol" are trademarks of FIX Protocol Limited.
+
+The dictionaries are used at runtime by the FIX Parser plugin for semantic
+resolution of FIX tag names, types, and enumerated values. They are data
+resources only; no QuickFIX source code is linked into this product.

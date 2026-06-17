@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  core:
+    name: Core library + unit tests (${{ matrix.configuration }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use preinstalled vcpkg
+        shell: pwsh
+        run: |
+          # GitHub-hosted Windows runners ship a full vcpkg checkout.
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+
+      - name: Cache vcpkg binary packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/build/vs2022/vcpkg_installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-
+
+      - name: Configure
+        shell: pwsh
+        run: cmake --preset vs2022
+
+      - name: Build
+        shell: pwsh
+        run: cmake --build --preset vs2022-${{ matrix.configuration == 'Debug' && 'debug' || 'release' }}
+
+      - name: Test
+        shell: pwsh
+        run: ctest --preset vs2022-${{ matrix.configuration == 'Debug' && 'debug' || 'release' }}
+
+      - name: Stage plugin package
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          $stage = "package/FixParser"
+          New-Item -ItemType Directory -Force -Path "$stage/dictionaries" | Out-Null
+          Copy-Item "build/vs2022/Release/FixParser.dll" "$stage/" -Force
+          Copy-Item "build/vs2022/Release/pugixml.dll" "$stage/" -Force
+          Copy-Item "build/vs2022/dictionaries/*.xml" "$stage/dictionaries/" -Force
+          Copy-Item "build/vs2022/dictionaries/NOTICE.txt" "$stage/dictionaries/" -Force
+
+      - name: Upload plugin artifact
+        if: matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: FixParser-plugin-x64
+          path: package/FixParser/**
