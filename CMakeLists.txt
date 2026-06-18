@@ -67,11 +67,11 @@ function(fixparser_sanitize target)
     # MSVC (and clang-cl, which also reports MSVC) build cleanly with native
     # AddressSanitizer. ASan needs a non-debug CRT, so the sanitize preset uses
     # RelWithDebInfo. UBSan is not available with the MSVC driver (it needs the
-    # GNU-style clang/gcc driver), so it is not enabled here. The vcpkg deps are
-    # not instrumented, so disable the MSVC-STL container annotations to avoid the
-    # annotate_string/vector detect_mismatch link error against them.
+    # GNU-style clang/gcc driver), so it is not enabled here. The deps are built
+    # WITH ASan via the x64-windows-static-asan overlay triplet, so STL container
+    # annotations are consistent on both sides -- no _DISABLE_* macros needed
+    # (which keeps this working across Visual Studio toolset versions).
     target_compile_options(${target} PRIVATE /fsanitize=address)
-    target_compile_definitions(${target} PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1 _HAS_ASAN_CONTAINER_ANNOTATIONS=0)
   else()
     # GCC / Clang with the GNU driver: AddressSanitizer + UndefinedBehaviorSanitizer.
     target_compile_options(${target} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
@@ -180,13 +180,16 @@ if(FIXPARSER_BUILD_FUZZER)
   endif()
 
   # Coverage-instrument the code under test (no fuzzer main in the library).
+  # The fuzzer uses clang-cl against non-instrumented vcpkg deps, so disable the
+  # MSVC-STL container annotations to keep both sides consistent (clang-cl honors
+  # these). The fuzz workflow runs on the matching VS 2022 toolset.
   target_compile_options(fixparser_core PRIVATE -fsanitize=fuzzer-no-link,address /Oy-)
-  target_compile_definitions(fixparser_core PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1 _HAS_ASAN_CONTAINER_ANNOTATIONS=0)
+  target_compile_definitions(fixparser_core PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1)
 
   add_executable(fixparser_fuzzer src/fuzz/fuzz_parser.cpp)
   target_link_libraries(fixparser_fuzzer PRIVATE fixparser_core)
   target_compile_options(fixparser_fuzzer PRIVATE -fsanitize=fuzzer,address /Oy-)
-  target_compile_definitions(fixparser_fuzzer PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1 _HAS_ASAN_CONTAINER_ANNOTATIONS=0)
+  target_compile_definitions(fixparser_fuzzer PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1)
 
   # CMake links via lld-link directly (it ignores -fsanitize), so add clang's
   # runtime lib dir and link the libFuzzer + ASan runtimes explicitly, and copy

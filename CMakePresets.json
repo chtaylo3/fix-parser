@@ -78,7 +78,8 @@
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-asan",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
         "FIXPARSER_ENABLE_SANITIZERS": "ON",
         "FIXPARSER_BUILD_TESTS": "ON",
         "FIXPARSER_BUILD_PLUGIN": "OFF"

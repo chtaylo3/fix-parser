@@ -15,7 +15,10 @@ permissions:
 jobs:
   fuzz:
     name: libFuzzer (parser core)
-    runs-on: windows-latest
+    # clang-cl + non-instrumented vcpkg deps: pinned to the VS 2022 toolset the
+    # fuzz build is validated against (the STL ASan-annotation ABI shifts on newer
+    # toolsets). This is a non-blocking, scheduled/manual job, not a PR gate.
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
 

@@ -96,11 +96,9 @@ jobs:
 
   sanitize:
     name: AddressSanitizer (core + tests)
-    # Pinned to VS 2022: the VS 2026 STL emits an extra ASan container annotation
-    # (annotate_optional) whose opt-out macro differs, causing LNK2038 against the
-    # non-instrumented vcpkg Catch2. VS 2022's _DISABLE_STRING/VECTOR_ANNOTATION
-    # is sufficient and matches the locally-validated environment.
-    runs-on: windows-2022
+    # Deps are built with ASan via the x64-windows-static-asan overlay triplet, so
+    # this stays version-agnostic on windows-latest (no toolset-specific macros).
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
