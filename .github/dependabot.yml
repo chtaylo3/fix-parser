@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Keep the GitHub Actions used by our workflows (checkout, cache, codeql,
+  # gitleaks, upload-artifact, ...) up to date. vcpkg dependencies are not
+  # supported by Dependabot; they float with the runner's vcpkg (see README).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Wait 21 days after a new action release before opening an update PR, so
+    # freshly-published (and potentially compromised/buggy) versions have time to
+    # be vetted by the ecosystem before we adopt them.
+    cooldown:
+      default-days: 21
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]

@@ -93,3 +93,77 @@ jobs:
         with:
           name: FixParser-plugin-x64
           path: package/FixParser/**
+
+  sanitize:
+    name: AddressSanitizer (core + tests)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use preinstalled vcpkg
+        shell: pwsh
+        run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+
+      - name: Cache vcpkg binary packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/build/sanitize/vcpkg_installed
+          key: vcpkg-asan-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-asan-${{ runner.os }}-
+
+      - name: Build & test under AddressSanitizer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsPath) { throw "No Visual Studio with VC tools found on the runner." }
+          Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+          Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
+          Write-Host "::group::Configure (MSVC ASan)"
+          cmake --preset sanitize
+          if ($LASTEXITCODE) { throw "configure failed" }
+          Write-Host "::endgroup::"
+          Write-Host "::group::Build"
+          cmake --build --preset sanitize
+          if ($LASTEXITCODE) { throw "build failed" }
+          Write-Host "::endgroup::"
+          Write-Host "::group::Test under ASan"
+          ctest --preset sanitize
+          if ($LASTEXITCODE) { throw "tests failed under ASan" }
+          Write-Host "::endgroup::"
+
+  clang-tidy:
+    name: clang-tidy (core)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use preinstalled vcpkg
+        shell: pwsh
+        run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+
+      - name: Cache vcpkg binary packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/build/tidy/vcpkg_installed
+          key: vcpkg-tidy-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-tidy-${{ runner.os }}-
+
+      - name: Lint core with clang-tidy
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsPath) { throw "No Visual Studio with VC tools found on the runner." }
+          Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+          Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          # clang-tidy ships with the runner's LLVM; make sure it is on PATH.
+          $env:PATH = (Join-Path $env:ProgramFiles 'LLVM\bin') + ';' + $env:PATH
+          $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
+          cmake --preset tidy
+          if ($LASTEXITCODE) { throw "configure failed" }
+          cmake --build --preset tidy
+          if ($LASTEXITCODE) { throw "clang-tidy reported errors (bugprone-*/clang-analyzer-*/cert-*)" }

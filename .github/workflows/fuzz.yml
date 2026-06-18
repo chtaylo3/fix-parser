@@ -1,0 +1,61 @@
+name: Fuzz
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: "Fuzzing duration in seconds"
+        default: "300"
+  schedule:
+    - cron: "30 4 * * 0" # weekly smoke fuzz, Sunday 04:30 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: libFuzzer (parser core)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use preinstalled vcpkg
+        shell: pwsh
+        run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+
+      - name: Build & run fuzzer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $duration = '${{ github.event.inputs.duration }}'
+          if (-not $duration) { $duration = '300' }  # scheduled runs have no input
+
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsPath) { throw "No Visual Studio with VC tools found on the runner." }
+          Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+          Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          $env:PATH = (Join-Path $env:ProgramFiles 'LLVM\bin') + ';' + $env:PATH
+          $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
+
+          cmake --preset fuzz
+          if ($LASTEXITCODE) { throw "configure failed" }
+          cmake --build --preset fuzz
+          if ($LASTEXITCODE) { throw "build failed" }
+
+          New-Item -ItemType Directory -Force -Path artifacts, corpus | Out-Null
+          Write-Host "Fuzzing for $duration seconds..."
+          # First dir collects new units (ephemeral); the rest are read-only seeds:
+          # the curated seeds plus the real-world FIX dataset.
+          & build/fuzz/fixparser_fuzzer.exe `
+            "-max_total_time=$duration" -max_len=65536 -print_final_stats=1 `
+            "-artifact_prefix=artifacts/" corpus test/fuzz/seeds test/data/fixsim
+          if ($LASTEXITCODE) { throw "fuzzer found a crash (see uploaded artifacts)" }
+
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes
+          path: artifacts/**
+          if-no-files-found: ignore

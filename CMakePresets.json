@@ -54,7 +54,52 @@
       "inherits": "vcpkg-base",
       "generator": "Ninja Multi-Config",
       "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "FIXPARSER_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "sanitize",
+      "displayName": "Sanitizer (MSVC ASan, x64)",
+      "description": "Build + run the Catch2 tests under AddressSanitizer. (UBSan needs clang-cl, which has Windows runtime-linking friction; see sanitize-clang.)",
+      "inherits": "vcpkg-base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "FIXPARSER_ENABLE_SANITIZERS": "ON",
+        "FIXPARSER_BUILD_TESTS": "ON",
+        "FIXPARSER_BUILD_PLUGIN": "OFF"
+      }
+    },
+    {
+      "name": "tidy",
+      "displayName": "clang-tidy (core)",
+      "description": "Lint the parser core with clang-tidy during build. Needs clang-tidy (LLVM) on PATH.",
+      "inherits": "vcpkg-base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "FIXPARSER_ENABLE_CLANG_TIDY": "ON",
+        "FIXPARSER_BUILD_PLUGIN": "OFF",
+        "FIXPARSER_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "fuzz",
+      "displayName": "libFuzzer (clang-cl, fuzzer+ASan)",
+      "description": "Coverage-guided fuzzer for the parser core. Needs LLVM (clang-cl) and the MSVC env on PATH.",
+      "inherits": "vcpkg-base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "FIXPARSER_BUILD_FUZZER": "ON",
+        "FIXPARSER_BUILD_PLUGIN": "OFF",
+        "FIXPARSER_BUILD_TESTS": "OFF"
       }
     }
   ],
@@ -87,6 +132,18 @@
       "name": "ci-release",
       "configurePreset": "ci",
       "configuration": "Release"
+    },
+    {
+      "name": "sanitize",
+      "configurePreset": "sanitize"
+    },
+    {
+      "name": "tidy",
+      "configurePreset": "tidy"
+    },
+    {
+      "name": "fuzz",
+      "configurePreset": "fuzz"
     }
   ],
   "testPresets": [
@@ -117,6 +174,13 @@
       "name": "ci-release",
       "configurePreset": "ci",
       "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "sanitize",
+      "configurePreset": "sanitize",
       "output": {
         "outputOnFailure": true
       }

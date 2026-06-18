@@ -34,6 +34,11 @@ CMakeSettings.json
 # Packaged release artifacts (built by scripts/package.ps1)
 /dist/
 
+# Fuzzing working corpus + crash artifacts (seeds live in test/fuzz/seeds)
+/corpus/
+/artifacts/
+/build/fuzz-corpus/
+
 # CMake
 CMakeCache.txt
 CMakeFiles/

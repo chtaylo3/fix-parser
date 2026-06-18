@@ -122,6 +122,52 @@ Real-world FIX corpora live under `test/data/`, organized by source with a
 `SOURCE.md` (origin, license, retrieval date) in each folder. See
 `test/data/README.md`.
 
+## Security & quality tooling
+
+The parser core is held to a high bar; the checks below run in CI (see
+`.github/workflows/`) and can all be run locally via CMake presets. Each is
+scoped to first-party code (`src/core`) — pugixml, Catch2, and the Notepad++ SDK
+are excluded.
+
+| Tool | Preset / how | What it catches |
+|------|--------------|-----------------|
+| **Strict warnings** | built into `ci` (`FIXPARSER_WARNINGS_AS_ERRORS=ON`) | `/W4 /permissive- /WX` (MSVC); `-Wconversion -Wshadow -Wformat=2 -Werror` (GCC/Clang) on the core |
+| **AddressSanitizer** | `cmake --preset sanitize` then build + `ctest` | buffer overruns, use-after-free, double-free — e.g. an over-read when a BodyLength/NumInGroup count lies |
+| **clang-tidy** | `cmake --preset tidy` + build | `bugprone-*`, `clang-analyzer-*`, `cert-*` (strict, build-breaking) plus `cppcoreguidelines/performance/portability/readability` (advisory); config in `.clang-tidy` |
+| **libFuzzer** | `cmake --preset fuzz` + build, then run `build/fuzz/fixparser_fuzzer.exe` | coverage-guided fuzzing of the full parse pipeline under ASan; seed from `test/fuzz/corpus` + `test/data/` |
+| **CodeQL** | `.github/workflows/codeql.yml` | semantic security analysis (`security-extended`) of the C++ |
+| **Secret scanning** | `.github/workflows/security.yml` (gitleaks) | committed credentials/keys across history |
+| **Dependabot** | `.github/dependabot.yml` | outdated GitHub Actions (weekly, 21-day cooldown) |
+
+Run the fuzzer for a few hours to shake out real bugs:
+
+```powershell
+cmake --preset fuzz
+cmake --build --preset fuzz
+# First dir collects new finds; the rest are read-only seeds.
+build\fuzz\fixparser_fuzzer.exe -max_len=65536 build\fuzz-corpus test\fuzz\seeds test\data\fixsim
+```
+
+> **UBSan note:** UndefinedBehaviorSanitizer is not available with the MSVC
+> driver (`cl`), so the `sanitize` preset is ASan-only. The libFuzzer build uses
+> clang-cl, which *does* support UBSan — wiring it into the fuzz target is a
+> reasonable next step.
+
+### Development environment setup
+
+CMake finds a toolchain but does not install one. To make a local box match the
+CI runner (LLVM/clang-cl for the `sanitize`/`tidy`/`fuzz` presets, plus Ninja and
+CMake), run once:
+
+```powershell
+pwsh scripts/setup-dev-env.ps1          # add -CheckOnly to only report
+```
+
+It installs the prerequisites via `winget` and verifies Visual Studio (MSVC) and
+`VCPKG_ROOT`. The `sanitize`/`tidy`/`fuzz` presets need clang/clang-tidy/clang-cl
+on `PATH`, so run them from a Visual Studio Developer prompt with LLVM's `bin`
+directory on `PATH`.
+
 ## Local debugging in Notepad++ (VS Code, F5)
 
 A one-command loop sets up a real portable Notepad++ with the plugin deployed and
