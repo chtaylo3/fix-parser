@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 # vcpkg manifest mode: dependencies are declared in vcpkg.json and installed
 # automatically at configure time when CMAKE_TOOLCHAIN_FILE points at vcpkg.
-project(fix-parser LANGUAGES CXX VERSION 0.2.0) # x-release-please-version
+project(fix-parser LANGUAGES CXX VERSION 0.3.0) # x-release-please-version
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
