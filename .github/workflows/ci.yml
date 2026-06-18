@@ -15,7 +15,7 @@ jobs:
       matrix:
         configuration: [Debug, Release]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
       - name: Use preinstalled vcpkg
         shell: pwsh
@@ -28,7 +28,7 @@ jobs:
           Add-Content $env:GITHUB_STEP_SUMMARY "Runner vcpkg commit: ``$sha``"
 
       - name: Cache vcpkg binary packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/build/ci/vcpkg_installed
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
@@ -89,7 +89,7 @@ jobs:
 
       - name: Upload plugin artifact
         if: matrix.configuration == 'Release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: FixParser-plugin-x64
           path: package/FixParser/**
@@ -98,14 +98,14 @@ jobs:
     name: AddressSanitizer (core + tests)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
       - name: Use preinstalled vcpkg
         shell: pwsh
         run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
 
       - name: Cache vcpkg binary packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/build/sanitize/vcpkg_installed
           key: vcpkg-asan-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
@@ -138,14 +138,14 @@ jobs:
     name: clang-tidy (core)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
       - name: Use preinstalled vcpkg
         shell: pwsh
         run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
 
       - name: Cache vcpkg binary packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/build/tidy/vcpkg_installed
           key: vcpkg-tidy-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
