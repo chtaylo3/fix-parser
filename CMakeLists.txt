@@ -71,7 +71,7 @@ function(fixparser_sanitize target)
     # not instrumented, so disable the MSVC-STL container annotations to avoid the
     # annotate_string/vector detect_mismatch link error against them.
     target_compile_options(${target} PRIVATE /fsanitize=address)
-    target_compile_definitions(${target} PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1)
+    target_compile_definitions(${target} PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1 _HAS_ASAN_CONTAINER_ANNOTATIONS=0)
   else()
     # GCC / Clang with the GNU driver: AddressSanitizer + UndefinedBehaviorSanitizer.
     target_compile_options(${target} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
@@ -181,12 +181,12 @@ if(FIXPARSER_BUILD_FUZZER)
 
   # Coverage-instrument the code under test (no fuzzer main in the library).
   target_compile_options(fixparser_core PRIVATE -fsanitize=fuzzer-no-link,address /Oy-)
-  target_compile_definitions(fixparser_core PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1)
+  target_compile_definitions(fixparser_core PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1 _HAS_ASAN_CONTAINER_ANNOTATIONS=0)
 
   add_executable(fixparser_fuzzer src/fuzz/fuzz_parser.cpp)
   target_link_libraries(fixparser_fuzzer PRIVATE fixparser_core)
   target_compile_options(fixparser_fuzzer PRIVATE -fsanitize=fuzzer,address /Oy-)
-  target_compile_definitions(fixparser_fuzzer PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1)
+  target_compile_definitions(fixparser_fuzzer PRIVATE _DISABLE_STRING_ANNOTATION=1 _DISABLE_VECTOR_ANNOTATION=1 _HAS_ASAN_CONTAINER_ANNOTATIONS=0)
 
   # CMake links via lld-link directly (it ignores -fsanitize), so add clang's
   # runtime lib dir and link the libFuzzer + ASan runtimes explicitly, and copy
