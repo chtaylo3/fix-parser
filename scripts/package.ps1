@@ -13,9 +13,20 @@
 
 .PARAMETER Version
   Version label used in the zip name, e.g. 0.1.0-alpha.
+
+.PARAMETER X64BuildDir
+  Build directory containing the x64 plugin (expects <dir>\Release\FixParser.dll
+  and <dir>\dictionaries). Defaults to the local vs2022 preset output. In CI use
+  the version-agnostic Ninja preset dir, e.g. build\ci.
+
+.PARAMETER X86BuildDir
+  Build directory containing the x86 plugin. Defaults to vs2022-x86; in CI use
+  build\ci-x86.
 #>
 param(
-  [string]$Version = "0.1.0-alpha"
+  [string]$Version = "0.1.0-alpha",
+  [string]$X64BuildDir,
+  [string]$X86BuildDir
 )
 
 $ErrorActionPreference = 'Stop'
@@ -23,10 +34,14 @@ $root = Split-Path -Parent $PSScriptRoot
 $dist = Join-Path $root 'dist'
 $stage = Join-Path $dist '_stage'
 
-# arch name -> (built DLL path, dictionaries dir produced at configure time)
+if (-not $X64BuildDir) { $X64BuildDir = "$root\build\vs2022" }
+if (-not $X86BuildDir) { $X86BuildDir = "$root\build\vs2022-x86" }
+
+# arch name -> (built DLL path, dictionaries dir produced at configure time).
+# Both the VS and Ninja-Multi-Config generators emit <dir>\Release\FixParser.dll.
 $targets = @(
-  @{ Arch = 'x64'; Dll = "$root\build\vs2022\Release\FixParser.dll";     Dict = "$root\build\vs2022\dictionaries" },
-  @{ Arch = 'x86'; Dll = "$root\build\vs2022-x86\Release\FixParser.dll"; Dict = "$root\build\vs2022-x86\dictionaries" }
+  @{ Arch = 'x64'; Dll = "$X64BuildDir\Release\FixParser.dll"; Dict = "$X64BuildDir\dictionaries" },
+  @{ Arch = 'x86'; Dll = "$X86BuildDir\Release\FixParser.dll"; Dict = "$X86BuildDir\dictionaries" }
 )
 
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }

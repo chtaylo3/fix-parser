@@ -59,6 +59,18 @@
       }
     },
     {
+      "name": "ci-x86",
+      "displayName": "CI x86 (Ninja Multi-Config, MSVC, x86-windows-static)",
+      "description": "Version-agnostic x86 plugin build — run from an x86 MSVC dev shell.",
+      "inherits": "vcpkg-base",
+      "generator": "Ninja Multi-Config",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x86-windows-static",
+        "VCPKG_MANIFEST_FEATURES": "",
+        "FIXPARSER_BUILD_TESTS": "OFF"
+      }
+    },
+    {
       "name": "sanitize",
       "displayName": "Sanitizer (MSVC ASan, x64)",
       "description": "Build + run the Catch2 tests under AddressSanitizer. (UBSan needs clang-cl, which has Windows runtime-linking friction; see sanitize-clang.)",
@@ -131,6 +143,11 @@
     {
       "name": "ci-release",
       "configurePreset": "ci",
+      "configuration": "Release"
+    },
+    {
+      "name": "ci-x86-release",
+      "configurePreset": "ci-x86",
       "configuration": "Release"
     },
     {
