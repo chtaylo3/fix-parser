@@ -46,6 +46,16 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "VCPKG_TARGET_TRIPLET": "x64-windows-static"
       }
+    },
+    {
+      "name": "ci",
+      "displayName": "CI (Ninja Multi-Config, MSVC, x64-windows-static)",
+      "description": "Version-agnostic CI generator — needs the MSVC env on PATH (dev shell).",
+      "inherits": "vcpkg-base",
+      "generator": "Ninja Multi-Config",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+      }
     }
   ],
   "buildPresets": [
@@ -67,6 +77,16 @@
     {
       "name": "ninja",
       "configurePreset": "ninja"
+    },
+    {
+      "name": "ci-debug",
+      "configurePreset": "ci",
+      "configuration": "Debug"
+    },
+    {
+      "name": "ci-release",
+      "configurePreset": "ci",
+      "configuration": "Release"
     }
   ],
   "testPresets": [
@@ -81,6 +101,22 @@
     {
       "name": "ninja",
       "configurePreset": "ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-debug",
+      "configurePreset": "ci",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-release",
+      "configurePreset": "ci",
+      "configuration": "Release",
       "output": {
         "outputOnFailure": true
       }

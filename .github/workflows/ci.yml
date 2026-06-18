@@ -20,10 +20,6 @@ jobs:
       - name: Use preinstalled vcpkg
         shell: pwsh
         run: |
-          # GitHub-hosted Windows runners ship a full vcpkg checkout. Since
-          # vcpkg.json no longer pins a builtin-baseline, the manifest resolves
-          # against whatever commit this preinstalled vcpkg is at -- so CI always
-          # "just works" without a baseline that the runner might not contain.
           echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
           # Surface that commit so local dev can match it for parity when desired
           # (README: "Keeping local vcpkg in sync with CI").
@@ -34,33 +30,62 @@ jobs:
       - name: Cache vcpkg binary packages
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/build/vs2022/vcpkg_installed
+          path: ${{ github.workspace }}/build/ci/vcpkg_installed
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: vcpkg-${{ runner.os }}-
 
-      - name: Configure
+      - name: Configure, build & test
         shell: pwsh
-        run: cmake --preset vs2022
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $preset = '${{ matrix.configuration == 'Debug' && 'ci-debug' || 'ci-release' }}'
 
-      - name: Build
-        shell: pwsh
-        run: cmake --build --preset vs2022-${{ matrix.configuration == 'Debug' && 'debug' || 'release' }}
+          # Load the MSVC toolchain onto PATH without a third-party action, so the
+          # Ninja generator finds cl/link. This is VS-version-agnostic: vswhere
+          # picks whatever Visual Studio (17, 18, ...) the runner image ships.
+          Write-Host "::group::Load MSVC developer environment"
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsPath) { throw "No Visual Studio with VC tools found on the runner." }
+          Write-Host "Using Visual Studio at: $vsPath"
+          Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+          Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          # Enter-VsDevShell overwrites VCPKG_ROOT with the VS-bundled vcpkg; re-assert
+          # the runner's preinstalled vcpkg so the manifest resolves against it.
+          $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
+          Write-Host "VCPKG_ROOT=$env:VCPKG_ROOT"
+          Write-Host "::endgroup::"
 
-      - name: Test
-        shell: pwsh
-        run: ctest --preset vs2022-${{ matrix.configuration == 'Debug' && 'debug' || 'release' }}
+          Write-Host "::group::Configure (Ninja Multi-Config)"
+          cmake --preset ci
+          if ($LASTEXITCODE) { throw "configure failed" }
+          Write-Host "::endgroup::"
+
+          Write-Host "::group::Build ($preset)"
+          cmake --build --preset $preset
+          if ($LASTEXITCODE) { throw "build failed" }
+          Write-Host "::endgroup::"
+
+          Write-Host "::group::Test ($preset)"
+          ctest --preset $preset
+          if ($LASTEXITCODE) { throw "tests failed" }
+          Write-Host "::endgroup::"
 
       - name: Stage plugin package
         if: matrix.configuration == 'Release'
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           # The x64-windows-static triplet links pugixml + the CRT statically, so
           # FixParser.dll is self-contained -- there is no pugixml.dll to copy.
+          # Locate the DLL wherever Ninja Multi-Config placed it under build/ci.
+          $dll = Get-ChildItem build/ci -Recurse -Filter FixParser.dll | Select-Object -First 1
+          if (-not $dll) { throw "FixParser.dll not found under build/ci" }
           $stage = "package/FixParser"
           New-Item -ItemType Directory -Force -Path "$stage/dictionaries" | Out-Null
-          Copy-Item "build/vs2022/Release/FixParser.dll" "$stage/" -Force
-          Copy-Item "build/vs2022/dictionaries/*.xml" "$stage/dictionaries/" -Force
-          Copy-Item "build/vs2022/dictionaries/NOTICE.txt" "$stage/dictionaries/" -Force
+          Copy-Item $dll.FullName "$stage/" -Force
+          Copy-Item "build/ci/dictionaries/*.xml" "$stage/dictionaries/" -Force
+          Copy-Item "build/ci/dictionaries/NOTICE.txt" "$stage/dictionaries/" -Force
 
       - name: Upload plugin artifact
         if: matrix.configuration == 'Release'
