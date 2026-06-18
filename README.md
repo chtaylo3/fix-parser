@@ -75,8 +75,34 @@ cmake --build --preset vs2022-debug
 ctest --preset vs2022-debug
 ```
 
-Dependencies (`pugixml`, `catch2`) are resolved by vcpkg manifest mode using the
-baseline pinned in `vcpkg.json`.
+Dependencies (`pugixml`, `catch2`) are resolved by vcpkg manifest mode. The
+manifest deliberately **does not pin a `builtin-baseline`**, so it resolves
+against whatever commit your active vcpkg checkout (`$VCPKG_ROOT`) is at. This is
+what lets CI "just work" on GitHub's preinstalled vcpkg (whose commit GitHub
+controls and changes over time) without a baseline the runner might not contain.
+If you ever need reproducibility, re-pin by adding `"builtin-baseline": "<commit>"`
+to `vcpkg.json` (that becomes the override for both local and CI).
+
+### Keeping local vcpkg in sync with CI
+
+Because neither side pins a baseline, your local vcpkg and the CI runner's vcpkg
+can drift to different commits. For `pugixml` + `catch2` (very stable ports) this
+rarely matters, but if you want your local builds to match CI exactly:
+
+1. Find the commit CI used — every CI run prints **"Runner vcpkg commit: `<sha>`"**
+   in its job summary (and build log).
+2. Check your local vcpkg out to that commit:
+
+   ```powershell
+   git -C $env:VCPKG_ROOT fetch origin
+   git -C $env:VCPKG_ROOT checkout <sha>
+   ```
+
+   (Re-run `bootstrap-vcpkg.bat` if vcpkg asks you to.) Delete `build/<preset>/` and
+   re-configure so the new ports take effect.
+
+To go the other way — make CI match a commit *you* choose — pin `builtin-baseline`
+as described above; both sides then use exactly that commit.
 
 ### FIX dictionaries
 

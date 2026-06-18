@@ -5,7 +5,6 @@
   "description": "FIX protocol message parser core for the Notepad++ FIX Parser plugin.",
   "homepage": "https://github.com/chtaylo3/fix-parser",
   "license": "GPL-2.0-only",
-  "builtin-baseline": "48532c067e37afef5ada43d7f89b500ab7360c9d",
   "dependencies": [
     "pugixml"
   ],
@@ -13,10 +12,7 @@
     "tests": {
       "description": "Build unit tests",
       "dependencies": [
-        {
-          "name": "catch2",
-          "version>=": "3.4.0"
-        }
+        "catch2"
       ]
     }
   }

@@ -20,8 +20,16 @@ jobs:
       - name: Use preinstalled vcpkg
         shell: pwsh
         run: |
-          # GitHub-hosted Windows runners ship a full vcpkg checkout.
+          # GitHub-hosted Windows runners ship a full vcpkg checkout. Since
+          # vcpkg.json no longer pins a builtin-baseline, the manifest resolves
+          # against whatever commit this preinstalled vcpkg is at -- so CI always
+          # "just works" without a baseline that the runner might not contain.
           echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+          # Surface that commit so local dev can match it for parity when desired
+          # (README: "Keeping local vcpkg in sync with CI").
+          $sha = git -C "$env:VCPKG_INSTALLATION_ROOT" rev-parse HEAD
+          Write-Host "Runner vcpkg commit: $sha"
+          Add-Content $env:GITHUB_STEP_SUMMARY "Runner vcpkg commit: ``$sha``"
 
       - name: Cache vcpkg binary packages
         uses: actions/cache@v4
@@ -46,10 +54,11 @@ jobs:
         if: matrix.configuration == 'Release'
         shell: pwsh
         run: |
+          # The x64-windows-static triplet links pugixml + the CRT statically, so
+          # FixParser.dll is self-contained -- there is no pugixml.dll to copy.
           $stage = "package/FixParser"
           New-Item -ItemType Directory -Force -Path "$stage/dictionaries" | Out-Null
           Copy-Item "build/vs2022/Release/FixParser.dll" "$stage/" -Force
-          Copy-Item "build/vs2022/Release/pugixml.dll" "$stage/" -Force
           Copy-Item "build/vs2022/dictionaries/*.xml" "$stage/dictionaries/" -Force
           Copy-Item "build/vs2022/dictionaries/NOTICE.txt" "$stage/dictionaries/" -Force
 
