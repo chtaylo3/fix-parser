@@ -11,7 +11,7 @@
        exact path) and is also the standard manual-install download.
 
     2. Drop-in folder (e.g. FixParser_0.1.0_x64_portable.zip)
-       The same payload wrapped in a top-level "FixParser\" folder, so a tester
+       The same payload wrapped in a top-level "FixParser\" folder, so a tester 
        can extract it straight into a portable Notepad++ "plugins\" directory.
 
   Architecture tokens follow the Notepad++ convention: x64 stays "x64"; the
