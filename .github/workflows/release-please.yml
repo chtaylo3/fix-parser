@@ -10,13 +10,15 @@ permissions:
 
 jobs:
   # Maintains a version-bump "release PR" (+ changelog). Merging it is approval #1
-  # and creates a DRAFT GitHub release + tag. Pure git/API tooling — no build.
+  # and creates a DRAFT GitHub release (no git tag yet — a draft creates the tag
+  # only when published). Pure git/API tooling — no build.
   release-please:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.rp.outputs.release_created }}
       tag_name: ${{ steps.rp.outputs.tag_name }}
       version: ${{ steps.rp.outputs.version }}
+      sha: ${{ steps.rp.outputs.sha }}
     steps:
       # Run release-please as a GitHub App rather than the default GITHUB_TOKEN.
       # Two reasons (see decision issue #6 / immutable-releases setup):
@@ -38,8 +40,11 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  # Builds + publishes only after the draft release exists. Gated by the
-  # "release" Environment (required reviewer) = approval #2 before going live.
+  # Builds artifacts and attaches them to the DRAFT release while it is still
+  # mutable, then publishes it (which creates the tag and finalizes immutability
+  # WITH the assets). This ordering is mandatory: with immutable releases on, you
+  # cannot add assets to an already-published release. Gated by the "release"
+  # Environment (required reviewer) = approval #2 before going live.
   publish:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
@@ -48,9 +53,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Check out the release commit by SHA: a draft release has no git tag yet
+      # (the tag is created only when we publish it below).
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.release-please.outputs.sha }}
 
       - name: Use preinstalled vcpkg
         shell: pwsh
@@ -112,13 +119,29 @@ jobs:
             -X64BuildDir (Resolve-Path build/ci).Path `
             -X86BuildDir (Resolve-Path build/ci-x86).Path
 
+      # Publishing the draft creates the v* tag, which is subject to the
+      # release-tags-immutable ruleset's creation rule -- so this must run as the
+      # App (the bypass actor), not the default GITHUB_TOKEN.
+      - name: Mint App token for release publish
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
+
       - name: Upload assets and publish the release
         shell: pwsh
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           $ErrorActionPreference = 'Stop'
           $tag = '${{ needs.release-please.outputs.tag_name }}'
           $zips = (Get-ChildItem dist/*.zip).FullName
+          # Attach assets while the release is still a draft (mutable). gh native
+          # exit codes don't trip $ErrorActionPreference, so check them explicitly
+          # -- a swallowed upload failure is exactly what shipped an empty v0.1.1.
           gh release upload $tag @zips --clobber
+          if ($LASTEXITCODE) { throw "asset upload to draft release failed" }
+          # Un-draft = publish: creates the tag and locks the release (now WITH assets).
           gh release edit $tag --draft=false --latest
+          if ($LASTEXITCODE) { throw "publishing (un-drafting) the release failed" }
