@@ -34,6 +34,9 @@ CMakeSettings.json
 # Packaged release artifacts (built by scripts/package.ps1)
 /dist/
 
+# Release assets downloaded for nppPluginList prep (scripts/prepare-npppluginlist.py)
+/dist-release/
+
 # Fuzzing working corpus + crash artifacts (seeds live in test/fuzz/seeds)
 /corpus/
 /artifacts/
