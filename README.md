@@ -217,16 +217,18 @@ UTF-16 files should be converted via the Encoding menu first.
 ## Releasing
 
 Releases are automated with [release-please](https://github.com/googleapis/release-please)
-and gated by two approvals:
+(run as a GitHub App) and gated by two approvals:
 
 1. **Merge feature PRs to `main`.** release-please opens/updates a "release PR"
    (`chore(main): release X.Y.Z`) with the version bump + changelog. Versioning
    is `always-bump-patch`.
-2. **Merge the release PR** (approval #1). This creates the git tag and a *draft*
-   GitHub release.
-3. **Approve the `release` environment** (approval #2). The `publish` job then
-   builds x64/x86, verifies the embedded DLL version matches the release,
-   packages the zips, uploads them, and flips the release to published.
+2. **Merge the release PR** (approval #1). This creates a *draft* GitHub release —
+   mutable, and with **no git tag yet** (the tag is created when it's published).
+3. **Approve the `release` environment** (approval #2). The `publish` job builds
+   x64/Win32, verifies each DLL's embedded version matches the release, attaches
+   the four zips to the draft, then publishes it — which creates the tag and
+   locks the release *with* its assets. (Assets must be attached before publish:
+   immutable releases reject changes to an already-published release.)
 
 To force a specific version (e.g. skipping a number), put a `Release-As: X.Y.Z`
 footer in a commit that lands on `main`.
@@ -236,6 +238,12 @@ footer in a commit that lands on `main`.
 > even if you later delete the release in the UI. Re-publishing that version
 > fails with *"tag_name was used by an immutable release"* and a blocked tag
 > `creation` rule — bump to the next version instead.
+
+> **Implementation note:** because a draft release has no tag, a single
+> release-please invocation would re-propose the just-released version as a
+> duplicate PR. The workflow therefore runs release-please in two phases —
+> create-release (skipping PR management) and manage-PR (skipped on the run that
+> just cut a release) — so no duplicate is ever opened.
 
 ## License
 
