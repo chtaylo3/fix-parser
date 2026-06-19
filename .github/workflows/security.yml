@@ -16,12 +16,12 @@ jobs:
     # A scanner, not a build — runs anywhere; ubuntu is the fastest/cheapest.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0 # full history so the scan covers every commit on the PR/branch
 
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Free for personal/public repos; no GITLEAKS_LICENSE required.

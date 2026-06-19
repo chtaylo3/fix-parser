@@ -20,7 +20,7 @@ jobs:
     # toolsets). This is a non-blocking, scheduled/manual job, not a PR gate.
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
       - name: Use preinstalled vcpkg
         shell: pwsh
@@ -57,7 +57,7 @@ jobs:
 
       - name: Upload crash artifacts
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fuzz-crashes
           path: artifacts/**
