@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/chtaylo3/fix-parser/compare/v0.1.2...v0.1.3) (2026-06-19)
+
+
+### Continuous Integration
+
+* two-phase release-please to prevent duplicate release PR ([#18](https://github.com/chtaylo3/fix-parser/issues/18)) ([cc87f63](https://github.com/chtaylo3/fix-parser/commit/cc87f63c87278ecac60c40a556b6439b47e91c3c))
+
 ## [0.1.2](https://github.com/chtaylo3/fix-parser/compare/v0.1.1...v0.1.2) (2026-06-19)
 
 
