@@ -23,7 +23,7 @@ inspect any message's fields without leaving Notepad++.
 ## Pretty-print quick start
 
 1. Open a FIX log (any delimiter convention).
-2. **Plugins → FIX Parser → Pretty-print FIX log**.
+2. **Plugins → FixParser → Pretty-print FIX log**.
 3. Each message is reformatted to `tag=value|tag=value|…`, one per line. `Ctrl+Z`
    restores the original buffer.
 

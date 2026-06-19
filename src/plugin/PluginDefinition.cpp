@@ -1,5 +1,7 @@
 #include "PluginDefinition.h"
 
+#include "version.h"
+
 #include "Scintilla.h"
 #include "menuCmdID.h"
 
@@ -305,10 +307,14 @@ void cmdTogglePanel() {
 
 void cmdAbout() {
     ::MessageBoxW(nppData._nppHandle,
-                  L"FIX Parser for Notepad++\n"
+                  L"FixParser for Notepad++  v" FIXPARSER_VERSION_W L"\n"
                   L"Pretty-print and inspect FIX protocol messages.\n"
+                  L"\n"
+                  L"Author:  " FIXPARSER_AUTHOR_W L"\n"
+                  L"Project: " FIXPARSER_REPO_URL_W L"\n"
+                  L"\n"
                   L"GPL-2.0. Dictionaries: QuickFIX (QuickFIX Software License).",
-                  L"About FIX Parser", MB_OK | MB_ICONINFORMATION);
+                  L"About FixParser", MB_OK | MB_ICONINFORMATION);
 }
 
 // ---------------------------------------------------------------------------

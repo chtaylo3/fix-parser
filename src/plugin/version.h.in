@@ -1,0 +1,9 @@
+// Generated from version.h.in by CMake configure_file (@ONLY). Single source of
+// truth for the version/identity strings shown in the plugin's About box, kept in
+// sync with the DLL's embedded VERSIONINFO (version.rc.in) and the project()
+// VERSION in CMakeLists.txt (which release-please bumps).
+#pragma once
+
+#define FIXPARSER_VERSION_W   L"@PROJECT_VERSION@"
+#define FIXPARSER_REPO_URL_W  L"https://github.com/chtaylo3/fix-parser"
+#define FIXPARSER_AUTHOR_W    L"Chris Taylor (github.com/chtaylo3)"

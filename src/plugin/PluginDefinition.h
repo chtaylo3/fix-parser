@@ -2,8 +2,9 @@
 
 #include "PluginInterface.h"
 
-// Plugin identity.
-const wchar_t NPP_PLUGIN_NAME[] = L"FIX Parser";
+// Plugin identity. The menu/display name is kept identical to the plugin's
+// folder-name ("FixParser") so it matches the Notepad++ Plugins Admin entry.
+const wchar_t NPP_PLUGIN_NAME[] = L"FixParser";
 
 // Number of menu commands (including separators rendered as disabled items).
 const int nbFunc = 4;
