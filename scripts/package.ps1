@@ -114,6 +114,18 @@ function New-Zip([string]$SourceDir, [string]$Prefix, [string]$Zip) {
   "{0}  ({1:N0} bytes)`n  SHA-256: {2}" -f (Split-Path $Zip -Leaf), (Get-Item $Zip).Length, $sha
 }
 
+# Enforce the nppPluginList rule for the submitted (root-layout) zip: the plugin
+# DLL must sit at the archive ROOT (no folder prefix) and be named exactly
+# <folder-name>.dll. A regression here is silently rejected by Plugins Admin /
+# the upstream validator, so fail the build instead.
+function Assert-RootDll([string]$Zip, [string]$Dll) {
+  $archive = [System.IO.Compression.ZipFile]::OpenRead($Zip)
+  try { $names = @($archive.Entries.FullName) } finally { $archive.Dispose() }
+  if ($names -notcontains $Dll) {
+    throw "Root-layout zip '$(Split-Path $Zip -Leaf)' is missing '$Dll' at its root (entries: $($names -join ', '))."
+  }
+}
+
 foreach ($t in $targets) {
   $arch  = $t.Arch
   $token = $t.Token
@@ -186,7 +198,9 @@ LICENSE
   Set-Content -Path (Join-Path $plugDir 'INSTALL.txt') -Value $installTxt -Encoding utf8
 
   # 1) Root-layout zip (the Notepad++ norm): DLL + data at the zip root.
-  New-Zip -SourceDir $plugDir -Prefix "" -Zip (Join-Path $dist "FixParser_$Version`_$token.zip")
+  $rootZip = Join-Path $dist "FixParser_$Version`_$token.zip"
+  New-Zip -SourceDir $plugDir -Prefix "" -Zip $rootZip
+  Assert-RootDll -Zip $rootZip -Dll 'FixParser.dll'
 
   # 2) Drop-in zip: the FixParser/ folder wrapped at the zip root.
   New-Zip -SourceDir $plugDir -Prefix "FixParser/" -Zip (Join-Path $dist "FixParser_$Version`_$token`_portable.zip")

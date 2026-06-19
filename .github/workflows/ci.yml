@@ -95,6 +95,17 @@ jobs:
           name: FixParser-plugin-x64
           path: package/FixParser/**
 
+  npppluginlist:
+    name: nppPluginList entry lint (offline)
+    # Pure stdlib Python check of the submission entries against the vendored
+    # pl.schema -- no build, no network. Catches version-format / field / id /
+    # repository mistakes before the upstream PR. Runs anywhere; ubuntu is cheap.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate submission entries against vendored pl.schema
+        run: python3 scripts/validate-npppluginlist.py
+
   sanitize:
     name: AddressSanitizer (core + tests)
     # Deps are built with ASan via the x64-windows-static-asan overlay triplet, so
