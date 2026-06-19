@@ -2,7 +2,36 @@ cmake_minimum_required(VERSION 3.21)
 
 # vcpkg manifest mode: dependencies are declared in vcpkg.json and installed
 # automatically at configure time when CMAKE_TOOLCHAIN_FILE points at vcpkg.
-project(fix-parser LANGUAGES CXX VERSION 0.1.0) # x-release-please-version
+
+# Single source of truth for the version: release-please maintains
+# .release-please-manifest.json, and we derive PROJECT_VERSION from it so the
+# embedded DLL VERSIONINFO (version.rc/version.h) can never silently drift from
+# the released tag. See decision issue #6 (B+C+D). Enforcement is layered: B
+# only WARNs + falls back here (a parse/missing-file error must not break the
+# always-run configure path and block every PR), while C -- the publish-time
+# gate -- hard-fails a release whose built DLL version != the release version.
+set(_fp_manifest "${CMAKE_CURRENT_SOURCE_DIR}/.release-please-manifest.json")
+set(_fp_version "0.0.0") # obvious sentinel; C will reject it at release time
+if(EXISTS "${_fp_manifest}")
+  file(READ "${_fp_manifest}" _fp_manifest_json)
+  string(JSON _fp_raw ERROR_VARIABLE _fp_err GET "${_fp_manifest_json}" ".")
+  if(_fp_err)
+    message(WARNING "Could not read version from ${_fp_manifest} (${_fp_err}); "
+                    "falling back to ${_fp_version}.")
+  elseif(_fp_raw MATCHES "^([0-9]+\\.[0-9]+\\.[0-9]+)")
+    # Keep only numeric MAJOR.MINOR.PATCH; project(VERSION) rejects any
+    # prerelease/build suffix such as 1.2.0-rc.1 (watch item #2 in issue #6).
+    set(_fp_version "${CMAKE_MATCH_1}")
+  else()
+    message(WARNING "Manifest version '${_fp_raw}' is not numeric M.N.P; "
+                    "falling back to ${_fp_version}.")
+  endif()
+else()
+  message(WARNING "${_fp_manifest} not found; falling back to version ${_fp_version}. "
+                  "(Expected only in source-only/port consumption.)")
+endif()
+
+project(fix-parser LANGUAGES CXX VERSION ${_fp_version})
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

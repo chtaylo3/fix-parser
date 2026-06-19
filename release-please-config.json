@@ -6,8 +6,7 @@
   "packages": {
     ".": {
       "extra-files": [
-        { "type": "json", "path": "vcpkg.json", "jsonpath": "$.version" },
-        "CMakeLists.txt"
+        { "type": "json", "path": "vcpkg.json", "jsonpath": "$.version" }
       ]
     }
   }
