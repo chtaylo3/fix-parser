@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "cmake: configure",
+      "label": "cmake: configure (x64)",
       "type": "shell",
       "command": "cmake",
       "args": ["--preset", "vs2022"],
@@ -10,14 +10,33 @@
       "problemMatcher": []
     },
     {
-      "label": "local: build + deploy",
-      "detail": "Build the plugin, fetch portable Notepad++, generate sample logs, and deploy.",
+      "label": "cmake: configure (win32)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--preset", "vs2022-x86"],
+      "options": { "env": { "VCPKG_ROOT": "${env:VCPKG_ROOT}" } },
+      "problemMatcher": []
+    },
+    {
+      "label": "local: build + deploy (x64)",
+      "detail": "Build the Debug x64 plugin, fetch 64-bit portable Notepad++, generate sample logs, and deploy into tools/npp-x64.",
       "type": "shell",
       "command": "cmake",
       "args": ["--build", "--preset", "vs2022-debug", "--target", "local_env"],
       "options": { "env": { "VCPKG_ROOT": "${env:VCPKG_ROOT}" } },
-      "dependsOn": ["cmake: configure"],
+      "dependsOn": ["cmake: configure (x64)"],
       "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "local: build + deploy (win32)",
+      "detail": "Build the Debug Win32 plugin, fetch 32-bit portable Notepad++, generate sample logs, and deploy into tools/npp-win32.",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "--preset", "vs2022-x86-debug", "--target", "local_env"],
+      "options": { "env": { "VCPKG_ROOT": "${env:VCPKG_ROOT}" } },
+      "dependsOn": ["cmake: configure (win32)"],
+      "group": "build",
       "problemMatcher": ["$msCompile"]
     }
   ]
