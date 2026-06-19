@@ -31,22 +31,34 @@ job. It is stdlib-only (no pip, no network) and:
 The authoritative validator still runs on the upstream PR — this is a fast
 pre-flight, not a replacement.
 
-## Submitting a release (the manual step)
+## Submitting a release
 
-The `version`, `repository`, and `id` change every release. Before opening the
-upstream PR for version `X.Y.Z`:
+The `version`, `repository`, and `id` change every release. Steps 1–3 below are
+automated by the **Prepare nppPluginList submission** workflow.
 
-1. Bump `version` to `X.Y.Z` and update both `repository` URLs to the
-   `vX.Y.Z` release assets in each entry file.
-2. Compute the SHA-256 of each **root-layout** zip (`FixParser_X.Y.Z_x64.zip`
-   and `FixParser_X.Y.Z_Win32.zip` — *not* the `_portable` ones). The release
-   job already prints these; or locally: `Get-FileHash <zip> -Algorithm SHA256`.
-   Paste each lowercase hash into the matching entry's `id`.
-3. Re-run `python scripts/validate-npppluginlist.py` — it should report no
-   warnings.
-4. Fork nppPluginList, add `entry.x64.json` into `pl.x64.json`'s `npp-plugins`
-   array and `entry.x86.json` into `pl.x86.json`, and open the PR. Confirm the
-   `folder-name` is not already taken by another plugin first.
+1. **Fill the entries.** Run the *Prepare nppPluginList submission* workflow
+   (Actions → Run workflow; leave `tag` blank for the latest release). It
+   downloads the root-layout release zips, computes their SHA-256, writes
+   `version` + `repository` + `id` into both entry files, validates them, and
+   prints the paste-ready JSON in the run summary (also uploaded as an
+   artifact). Tick `open_pr` to also get an in-repo PR refreshing these files.
+
+   Or locally:
+
+   ```sh
+   python scripts/prepare-npppluginlist.py --version X.Y.Z \
+       --x64-zip dist/FixParser_X.Y.Z_x64.zip \
+       --x86-zip dist/FixParser_X.Y.Z_Win32.zip
+   python scripts/validate-npppluginlist.py   # expect no warnings
+   ```
+
+2. **Smoke-test** the plugin via a debug Notepad++ (both architectures) — the
+   upstream process expects this before the PR.
+
+3. **Open the upstream PR.** Fork nppPluginList, add the `entry.x64.json` object
+   into `src/pl.x64.json`'s `npp-plugins` array and `entry.x86.json` into
+   `src/pl.x86.json`, and open the PR. For a first-time submission, confirm the
+   `folder-name` is not already taken by another plugin.
 
 ## Refreshing the vendored schema
 

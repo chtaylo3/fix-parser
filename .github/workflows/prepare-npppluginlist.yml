@@ -1,0 +1,133 @@
+name: Prepare nppPluginList submission
+
+# Manual (workflow_dispatch) helper that turns a published release into the
+# finalized nppPluginList entries: it downloads the root-layout release zips,
+# computes their SHA-256, writes version + id + repository into the committed
+# entry files, validates them, and surfaces paste-ready JSON in the run summary.
+#
+# It deliberately does NOT push to notepad-plus-plus/nppPluginList -- that PR
+# (and the local Plugins Admin smoke test the project expects first) stays a
+# human step. Optionally it opens an in-repo PR refreshing the entry files.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to prepare (e.g. v0.1.3). Blank = latest release."
+        required: false
+        default: ""
+      open_pr:
+        description: "Also open an in-repo PR committing the refreshed entry files"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    name: Fill + validate entries for a release
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve release tag and version
+        id: rel
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.tag }}"
+          if [ -z "$tag" ]; then
+            tag=$(gh release view --json tagName --jq .tagName)
+          fi
+          ver="${tag#v}"
+          # Mirror the nppPluginList version rule: numeric M.N.P(.B), no suffix.
+          if ! printf '%s' "$ver" | grep -Eq '^[0-9]+(\.[0-9]+){0,3}$'; then
+            echo "::error::Resolved version '$ver' (tag '$tag') is not numeric M.N.P."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag=$tag version=$ver"
+
+      - name: Download root-layout release assets
+        run: |
+          set -euo pipefail
+          tag='${{ steps.rel.outputs.tag }}'
+          ver='${{ steps.rel.outputs.ver }}'
+          mkdir -p dist-release
+          # Exact names select the root-layout zips, never the *_portable ones.
+          gh release download "$tag" \
+            --pattern "FixParser_${ver}_x64.zip" \
+            --pattern "FixParser_${ver}_Win32.zip" \
+            --dir dist-release
+          ls -l dist-release
+
+      - name: Fill entries (version + id + repository)
+        run: |
+          set -euo pipefail
+          ver='${{ steps.rel.outputs.ver }}'
+          python3 scripts/prepare-npppluginlist.py \
+            --version "$ver" \
+            --x64-zip "dist-release/FixParser_${ver}_x64.zip" \
+            --x86-zip "dist-release/FixParser_${ver}_Win32.zip"
+
+      - name: Validate finalized entries
+        run: python3 scripts/validate-npppluginlist.py
+
+      - name: Write job summary
+        run: |
+          ver='${{ steps.rel.outputs.ver }}'
+          {
+            echo "## nppPluginList submission for v${ver}"
+            echo ""
+            echo "Paste each object into the \`npp-plugins\` array of the matching upstream file"
+            echo "(\`src/pl.x64.json\` and \`src/pl.x86.json\`) in a fork of"
+            echo "[notepad-plus-plus/nppPluginList](https://github.com/notepad-plus-plus/nppPluginList), then open a PR."
+            echo ""
+            echo "### pl.x64.json entry"
+            echo '```json'
+            cat packaging/npppluginlist/entry.x64.json
+            echo ""
+            echo '```'
+            echo "### pl.x86.json entry"
+            echo '```json'
+            cat packaging/npppluginlist/entry.x86.json
+            echo ""
+            echo '```'
+            echo ""
+            echo "> First-time submission: confirm the \`folder-name\` is still free upstream."
+            echo "> Always: smoke-test the plugin via a debug Notepad++ (both architectures) before the PR."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload finalized entries
+        uses: actions/upload-artifact@v4
+        with:
+          name: npppluginlist-entries-v${{ steps.rel.outputs.ver }}
+          path: packaging/npppluginlist/entry.*.json
+
+      - name: Open in-repo PR with refreshed entries
+        if: ${{ inputs.open_pr }}
+        run: |
+          set -euo pipefail
+          ver='${{ steps.rel.outputs.ver }}'
+          branch="prep/npppluginlist-v${ver}"
+          if git diff --quiet -- packaging/npppluginlist/; then
+            echo "Entries already match v${ver}; nothing to PR."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add packaging/npppluginlist/entry.x64.json packaging/npppluginlist/entry.x86.json
+          git commit -m "chore: refresh nppPluginList entries for v${ver}"
+          git push -u origin "$branch" --force-with-lease
+          if [ "$(gh pr list --head "$branch" --state open --json number --jq 'length')" = "0" ]; then
+            gh pr create --base main --head "$branch" \
+              --title "chore: refresh nppPluginList entries for v${ver}" \
+              --body "Auto-prepared by **Prepare nppPluginList submission** for \`v${ver}\` (real SHA-256 ids + asset URLs), validated by the nppPluginList lint job. After this merges, open the upstream PR with these entries."
+          else
+            echo "PR already open for $branch; pushed updates."
+          fi
