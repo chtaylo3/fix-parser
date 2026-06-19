@@ -5,6 +5,7 @@
   "versioning": "always-bump-patch",
   "packages": {
     ".": {
+      "draft": true,
       "extra-files": [
         { "type": "json", "path": "vcpkg.json", "jsonpath": "$.version" }
       ]
