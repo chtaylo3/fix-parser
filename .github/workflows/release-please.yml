@@ -33,12 +33,31 @@ jobs:
           app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
 
+      # release-please is invoked in two phases to avoid a duplicate release PR.
+      # A single invocation, on the run that merges the release PR, would both
+      # create the (tagless) draft AND -- finding no tag for that version --
+      # re-propose it as a duplicate release PR. Splitting prevents that:
+      #
+      # Phase 1: create releases only (skip PR management). Never opens a PR.
       - uses: googleapis/release-please-action@v4
         id: rp
         with:
           token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-pull-request: true
+
+      # Phase 2: manage the release PR only, and skip it on the run where phase 1
+      # just cut a release -- exactly the run that would otherwise open the
+      # duplicate. On normal pushes phase 1 is a no-op and this opens/updates the
+      # release PR as usual.
+      - uses: googleapis/release-please-action@v4
+        if: ${{ steps.rp.outputs.release_created != 'true' }}
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          skip-github-release: true
 
   # Builds artifacts and attaches them to the DRAFT release while it is still
   # mutable, then publishes it (which creates the tag and finalizes immutability
