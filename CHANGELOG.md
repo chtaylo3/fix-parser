@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/chtaylo3/fix-parser/compare/v0.1.1...v0.1.2) (2026-06-19)
+
+
+### Continuous Integration
+
+* attach assets to a draft release, then publish (fix immutable empty-release bug) ([#15](https://github.com/chtaylo3/fix-parser/issues/15)) ([4d43c6f](https://github.com/chtaylo3/fix-parser/commit/4d43c6f2fe13296002051abf31f7fa54f95fb73f))
+
 ## [0.1.1](https://github.com/chtaylo3/fix-parser/compare/v0.1.0...v0.1.1) (2026-06-19)
 
 
