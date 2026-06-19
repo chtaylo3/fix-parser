@@ -121,12 +121,23 @@ include(FetchDictionaries)
 if(WIN32 AND FIXPARSER_BUILD_PLUGIN)
   include(FetchNppSdk)
 
+  # Embed VERSIONINFO (required by Notepad++'s Plugins Admin / nppPluginList) and
+  # expose the same identity strings to the About box. Both are generated from the
+  # project() VERSION so they stay in lockstep with release-please version bumps.
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/plugin/version.rc.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/plugin/version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/version.h" @ONLY)
+
   add_library(fixparser_plugin SHARED
     src/plugin/dllmain.cpp
     src/plugin/PluginDefinition.cpp
     src/ui/FixPanel.cpp
     src/ui/FieldRenderer.cpp
     src/ui/FixPanel.rc
+    "${CMAKE_CURRENT_BINARY_DIR}/version.rc"
     ${FIXPARSER_NPP_SDK_SOURCES}
   )
   set_target_properties(fixparser_plugin PROPERTIES OUTPUT_NAME "FixParser" PREFIX "")
@@ -135,6 +146,7 @@ if(WIN32 AND FIXPARSER_BUILD_PLUGIN)
     "${FIXPARSER_NPP_SDK_DIR}/DockingFeature"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ui"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/plugin"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated"
   )
   target_link_libraries(fixparser_plugin PRIVATE
     fixparser_core comctl32 shlwapi user32 gdi32)
