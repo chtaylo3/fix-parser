@@ -18,9 +18,23 @@ jobs:
       tag_name: ${{ steps.rp.outputs.tag_name }}
       version: ${{ steps.rp.outputs.version }}
     steps:
+      # Run release-please as a GitHub App rather than the default GITHUB_TOKEN.
+      # Two reasons (see decision issue #6 / immutable-releases setup):
+      #   1. App-authored release PRs DO trigger CI (GITHUB_TOKEN-authored events
+      #      are suppressed, leaving release PRs with no required checks).
+      #   2. The App is a bypass actor on the release-tags-immutable ruleset, so
+      #      it can create the v* release tag (the bot/GITHUB_TOKEN cannot).
+      # The minted token is short-lived (~1h) and repo-scoped.
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
+
       - uses: googleapis/release-please-action@v4
         id: rp
         with:
+          token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
