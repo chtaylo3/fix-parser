@@ -1,0 +1,10 @@
+{
+  "folder-name": "FixParser",
+  "display-name": "FixParser",
+  "version": "0.1.2",
+  "id": "0000000000000000000000000000000000000000000000000000000000000000",
+  "repository": "https://github.com/chtaylo3/fix-parser/releases/download/v0.1.2/FixParser_0.1.2_x64.zip",
+  "description": "Pretty-print and inspect FIX protocol logs: field/value decoding, hover quickview, and a dockable message inspector.",
+  "author": "Chris Taylor",
+  "homepage": "https://github.com/chtaylo3/fix-parser"
+}

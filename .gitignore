@@ -45,3 +45,7 @@ CMakeFiles/
 cmake_install.cmake
 CTestTestfile.cmake
 compile_commands.json
+
+# Python (scripts/validate-npppluginlist.py)
+__pycache__/
+*.pyc
