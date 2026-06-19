@@ -55,10 +55,30 @@ automated by the **Prepare nppPluginList submission** workflow.
 2. **Smoke-test** the plugin via a debug Notepad++ (both architectures) — the
    upstream process expects this before the PR.
 
-3. **Open the upstream PR.** Fork nppPluginList, add the `entry.x64.json` object
-   into `src/pl.x64.json`'s `npp-plugins` array and `entry.x86.json` into
-   `src/pl.x86.json`, and open the PR. For a first-time submission, confirm the
-   `folder-name` is not already taken by another plugin.
+3. **Open the upstream PR.** `scripts/submit-npppluginlist.py --runbook` prints
+   the exact fork/sync/branch/PR steps (run locally with your own `gh` auth).
+   The brittle part — inserting our entry at the correct **case-insensitive
+   display-name** sorted position in `src/pl.x64.json` / `src/pl.x86.json`,
+   preserving the file's tabs and (mixed) line endings — is automated:
+
+   ```sh
+   # from inside your nppPluginList fork clone, on a new branch:
+   python <fix-parser>/scripts/submit-npppluginlist.py --dry-run \
+       --x64-list src/pl.x64.json --x86-list src/pl.x86.json   # review
+   python <fix-parser>/scripts/submit-npppluginlist.py --write \
+       --x64-list src/pl.x64.json --x86-list src/pl.x86.json   # apply
+   ```
+
+   It refuses to run while the `id` is the placeholder. For a first-time
+   submission, confirm the `folder-name` is not already taken upstream.
+
+## Files (submission tooling)
+
+| Script | Role |
+|--------|------|
+| `scripts/prepare-npppluginlist.py` | Fill our entries from a release (version + id + repository). |
+| `scripts/validate-npppluginlist.py` | Lint the entries against `pl.schema` (also a CI job). |
+| `scripts/submit-npppluginlist.py` | Insert the entries into the upstream list files + print the PR runbook. |
 
 ## Refreshing the vendored schema
 
