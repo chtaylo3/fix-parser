@@ -214,6 +214,29 @@ characters are all ASCII, so parsing is encoding-agnostic; non-ASCII bytes in
 free-text fields are passed through and rendered using the buffer's code page.
 UTF-16 files should be converted via the Encoding menu first.
 
+## Releasing
+
+Releases are automated with [release-please](https://github.com/googleapis/release-please)
+and gated by two approvals:
+
+1. **Merge feature PRs to `main`.** release-please opens/updates a "release PR"
+   (`chore(main): release X.Y.Z`) with the version bump + changelog. Versioning
+   is `always-bump-patch`.
+2. **Merge the release PR** (approval #1). This creates the git tag and a *draft*
+   GitHub release.
+3. **Approve the `release` environment** (approval #2). The `publish` job then
+   builds x64/x86, verifies the embedded DLL version matches the release,
+   packages the zips, uploads them, and flips the release to published.
+
+To force a specific version (e.g. skipping a number), put a `Release-As: X.Y.Z`
+footer in a commit that lands on `main`.
+
+> **Never reuse a version number.** This repo has GitHub **immutable releases**
+> enabled: once a release is published its tag name is reserved *permanently*,
+> even if you later delete the release in the UI. Re-publishing that version
+> fails with *"tag_name was used by an immutable release"* and a blocked tag
+> `creation` rule — bump to the next version instead.
+
 ## License
 
 GPL-2.0. See [`LICENSE`](LICENSE). Third-party components and their licenses are
