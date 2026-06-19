@@ -24,7 +24,10 @@
       cmake --build --preset vs2022-x86-release --target fixparser_plugin    # x86
 
 .PARAMETER Version
-  Version label used in the zip name, e.g. 0.1.0.
+  Optional version label for the zip names, e.g. 0.1.0. When omitted it is
+  DERIVED from the built x64 FixParser.dll's embedded FileVersion (decision #6,
+  D), so the zip name can never disagree with the binary. If supplied, it must
+  match the built DLL (prerelease suffix ignored) or packaging fails.
 
 .PARAMETER X64BuildDir
   Build directory containing the x64 plugin (expects <dir>\Release\FixParser.dll
@@ -36,7 +39,7 @@
   build\ci-x86.
 #>
 param(
-  [string]$Version = "0.1.0",
+  [string]$Version,
   [string]$X64BuildDir,
   [string]$X86BuildDir
 )
@@ -48,6 +51,27 @@ $stage = Join-Path $dist '_stage'
 
 if (-not $X64BuildDir) { $X64BuildDir = "$root\build\vs2022" }
 if (-not $X86BuildDir) { $X86BuildDir = "$root\build\vs2022-x86" }
+
+# Read a DLL's embedded FileVersion as M.N.P (the four-part M.N.P.0 with the
+# always-zero tweak trimmed). This is the version that actually shipped in the
+# binary -- the basis for deriving/validating the package version (decision #6, D).
+function Get-DllVersion([string]$Dll) {
+  if (-not (Test-Path $Dll)) { throw "Missing DLL: $Dll - build it first." }
+  ([System.Diagnostics.FileVersionInfo]::GetVersionInfo($Dll).FileVersion) -replace '\.0$', ''
+}
+
+# D: the zip version comes from the built x64 binary, not an independent argument.
+$derived = Get-DllVersion "$X64BuildDir\Release\FixParser.dll"
+if ($derived -notmatch '^\d+\.\d+\.\d+$') {
+  throw "Built x64 DLL has an unexpected version '$derived'. Refusing to package."
+}
+if ($Version) {
+  # Allow an explicit override for local use, but it must agree with the binary.
+  if (($Version -replace '-.*$', '') -ne $derived) {
+    throw "Provided -Version '$Version' != built x64 DLL version '$derived' (decision #6, D)."
+  }
+}
+$Version = $derived
 
 # arch name -> (built DLL path, dictionaries dir, Notepad++ zip-name token).
 # Both the VS and Ninja-Multi-Config generators emit <dir>\Release\FixParser.dll.
@@ -95,6 +119,13 @@ foreach ($t in $targets) {
   $token = $t.Token
   if (-not (Test-Path $t.Dll))  { throw "Missing DLL for $arch : $($t.Dll) - build it first." }
   if (-not (Test-Path $t.Dict)) { throw "Missing dictionaries for $arch : $($t.Dict) - configure first." }
+
+  # Every arch must embed the same version the zip is labelled with, so an x86
+  # build left stale from an earlier version can't ride along mislabelled.
+  $archVer = Get-DllVersion $t.Dll
+  if ($archVer -ne $Version) {
+    throw "Embedded version for $arch ('$archVer') != package version ('$Version')."
+  }
 
   # Stage the plugin payload once as plugins\FixParser\ ; both zip layouts reuse it.
   $plugDir = Join-Path $stage "$token\FixParser"

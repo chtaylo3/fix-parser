@@ -66,11 +66,35 @@ jobs:
           cmake --preset ci-x86
           cmake --build --preset ci-x86-release --target fixparser_plugin
 
+      # C (decision #6): hard-fail before going live if the embedded DLL version
+      # does not equal the release version. This is the enforcement layer behind
+      # B's warn-and-fall-back (e.g. it rejects the 0.0.0 sentinel) and catches a
+      # stale build cache, a wrong checkout ref, or a manual release-as override.
+      - name: Verify embedded DLL version matches the release
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Pad release-please's M.N.P to the DLL's four-part M.N.P.0 form and
+          # drop any prerelease suffix (which the DLL cannot carry).
+          $expected = '${{ needs.release-please.outputs.version }}' -replace '-.*$', ''
+          while (($expected -split '\.').Count -lt 4) { $expected += '.0' }
+          # Check the exact files package.ps1 will ship (deterministic Release\
+          # path), not a recursive first-match that could grab a stale build.
+          foreach ($dll in 'build/ci/Release/FixParser.dll', 'build/ci-x86/Release/FixParser.dll') {
+            if (-not (Test-Path $dll)) { throw "Built plugin not found: $dll" }
+            $fv = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path $dll)).FileVersion
+            Write-Host "$dll -> FileVersion $fv (expected $expected)"
+            if ($fv -ne $expected) {
+              throw "Embedded version mismatch in $dll : DLL '$fv' != release '$expected'. Refusing to publish (decision #6, C)."
+            }
+          }
+
       - name: Package x64 + x86
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          ./scripts/package.ps1 -Version '${{ needs.release-please.outputs.version }}' `
+          # No -Version: package.ps1 derives it from the (now C-verified) binary.
+          ./scripts/package.ps1 `
             -X64BuildDir (Resolve-Path build/ci).Path `
             -X86BuildDir (Resolve-Path build/ci-x86).Path
 
