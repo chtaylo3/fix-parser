@@ -27,7 +27,7 @@ jobs:
       #   2. The App is a bypass actor on the release-tags-immutable ruleset, so
       #      it can create the v* release tag (the bot/GITHUB_TOKEN cannot).
       # The minted token is short-lived (~1h) and repo-scoped.
-      - uses: actions/create-github-app-token@v2
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
@@ -39,7 +39,7 @@ jobs:
       # re-propose it as a duplicate release PR. Splitting prevents that:
       #
       # Phase 1: create releases only (skip PR management). Never opens a PR.
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: rp
         with:
           token: ${{ steps.app-token.outputs.token }}
@@ -51,7 +51,7 @@ jobs:
       # just cut a release -- exactly the run that would otherwise open the
       # duplicate. On normal pushes phase 1 is a no-op and this opens/updates the
       # release PR as usual.
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         if: ${{ steps.rp.outputs.release_created != 'true' }}
         with:
           token: ${{ steps.app-token.outputs.token }}
@@ -74,7 +74,7 @@ jobs:
     steps:
       # Check out the release commit by SHA: a draft release has no git tag yet
       # (the tag is created only when we publish it below).
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
         with:
           ref: ${{ needs.release-please.outputs.sha }}
 
@@ -142,7 +142,7 @@ jobs:
       # release-tags-immutable ruleset's creation rule -- so this must run as the
       # App (the bypass actor), not the default GITHUB_TOKEN.
       - name: Mint App token for release publish
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
