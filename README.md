@@ -188,24 +188,33 @@ in VS Code it will prompt to install the recommended extensions (from
 > `VCPKG_ROOT` persistently.
 
 **Use it:** pick **Debug FixParser in Notepad++ (moderate log)** (or the 50 MB
-single-line variant) from the Run and Debug panel and press F5. The
-`preLaunchTask` builds the plugin, downloads portable Notepad++, generates the
-sample logs, and deploys — then launches N++ on the sample so your breakpoints in
-`src/plugin` / `src/ui` hit.
+single-line variant) from the Run and Debug panel and press F5. VS Code first
+asks which architecture to debug — **x64** or **win32** — then the
+`preLaunchTask` builds the **Debug** plugin for that arch, downloads the matching
+portable Notepad++, generates the sample logs, and deploys — then launches N++ on
+the sample so your breakpoints in `src/plugin` / `src/ui` hit.
 
-What the local-dev CMake targets do (all excluded from `ALL`/CI):
+> **About the architecture picker.** A plugin only loads in a Notepad++ of the
+> same bitness, so each arch gets its own portable install under
+> `tools/npp-x64/` or `tools/npp-win32/`. Notepad++ ships **Release** builds only;
+> the breakpoint debugging comes from the *plugin* being built **Debug** (with
+> PDBs) via the `vs2022-debug` / `vs2022-x86-debug` presets — you step through
+> plugin code, not Notepad++'s internals.
+
+What the local-dev CMake targets do (all excluded from `ALL`/CI; `<arch>` is
+`x64` or `win32`, chosen by the configure preset):
 
 | Target | Action |
 |--------|--------|
-| `npp_fetch` | Download + extract pinned portable Notepad++ to `tools/npp/` |
+| `npp_fetch` | Download + extract the pinned portable Notepad++ for this arch to `tools/npp-<arch>/` |
 | `gen_sample_log` | Generate `tools/sample/sample-multiline.fix` (~25k msgs) and `sample-singleline.fix` (~50 MB) |
-| `deploy_local` | Copy `FixParser.dll` + `.pdb` + dictionaries into `tools/npp/plugins/FixParser/` |
+| `deploy_local` | Copy `FixParser.dll` + `.pdb` + dictionaries into `tools/npp-<arch>/plugins/FixParser/` |
 | `local_env` | All of the above (the VS Code preLaunchTask) |
 
-The plugin is built with the static triplet (`x64-windows-static`), so the
-deployed DLL is self-contained — it loads in a stock portable Notepad++ with no
-extra runtime DLLs, including Debug builds. Everything under `tools/` is generated
-and git-ignored.
+The plugin is built with the static triplet (`x64-windows-static` /
+`x86-windows-static`), so the deployed DLL is self-contained — it loads in a stock
+portable Notepad++ with no extra runtime DLLs, including Debug builds. Everything
+under `tools/` is generated and git-ignored.
 
 ## Encoding
 

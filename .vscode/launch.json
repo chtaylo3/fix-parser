@@ -1,24 +1,33 @@
 {
   "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "arch",
+      "type": "pickString",
+      "description": "Architecture to build + debug (Notepad++ host is Release; the plugin is built Debug):",
+      "options": ["x64", "win32"],
+      "default": "x64"
+    }
+  ],
   "configurations": [
     {
       "name": "Debug FixParser in Notepad++ (moderate log)",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/tools/npp/notepad++.exe",
+      "program": "${workspaceFolder}/tools/npp-${input:arch}/notepad++.exe",
       "args": ["${workspaceFolder}/tools/sample/sample-multiline.fix"],
-      "cwd": "${workspaceFolder}/tools/npp",
-      "preLaunchTask": "local: build + deploy",
+      "cwd": "${workspaceFolder}/tools/npp-${input:arch}",
+      "preLaunchTask": "local: build + deploy (${input:arch})",
       "console": "internalConsole"
     },
     {
       "name": "Debug FixParser in Notepad++ (50MB single-line)",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/tools/npp/notepad++.exe",
+      "program": "${workspaceFolder}/tools/npp-${input:arch}/notepad++.exe",
       "args": ["${workspaceFolder}/tools/sample/sample-singleline.fix"],
-      "cwd": "${workspaceFolder}/tools/npp",
-      "preLaunchTask": "local: build + deploy",
+      "cwd": "${workspaceFolder}/tools/npp-${input:arch}",
+      "preLaunchTask": "local: build + deploy (${input:arch})",
       "console": "internalConsole"
     }
   ]
